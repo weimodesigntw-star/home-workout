@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>居家重訓紀錄</title>
+<style>
+:root{
+  --bg:#f6f5f2;--card:#ffffff;--ink:#1d1d1b;--mute:#6b6a66;--line:#e4e2dc;--soft:#f0eee8;
+  --accent:#d2552d;--accent-ink:#ffffff;--ok:#2f8a57;--ok-soft:#e3f3e9;--chipA:#fde7dd;--chipB:#e1ecf7;--chipC:#ecebe6;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#151514;--card:#1f1f1d;--ink:#eceae4;--mute:#9b9992;--line:#34332f;--soft:#2a2927;
+    --accent:#f07a4f;--accent-ink:#1a1a1a;--ok:#5cc28a;--ok-soft:#1d3427;--chipA:#4a2a1f;--chipB:#1f3347;--chipC:#2c2b28;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151514;--card:#1f1f1d;--ink:#eceae4;--mute:#9b9992;--line:#34332f;--soft:#2a2927;
+  --accent:#f07a4f;--accent-ink:#1a1a1a;--ok:#5cc28a;--ok-soft:#1d3427;--chipA:#4a2a1f;--chipB:#1f3347;--chipC:#2c2b28;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;padding-bottom:90px}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 0 0}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+h1{font-size:18px;margin:0;letter-spacing:.02em}
+.weeknav{display:flex;align-items:center;gap:6px}
+.weeknav button{width:34px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:18px;cursor:pointer}
+.weeknav .wk{min-width:92px;text-align:center;font-weight:600}
+.phase{font-size:12px;color:var(--mute);margin:4px 0 8px}
+.tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;padding-bottom:10px}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:10px;padding:6px 0 5px;cursor:pointer;text-align:center;font:inherit;position:relative}
+.tab b{display:block;font-size:15px}
+.tab small{display:block;font-size:10.5px;color:var(--mute);line-height:1.3}
+.tab.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab.on small{color:inherit;opacity:.75}
+.tab.today::after{content:"";position:absolute;top:4px;right:5px;width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.tab .bar{height:3px;border-radius:2px;background:var(--line);margin:4px 8px 0;overflow:hidden}
+.tab .bar i{display:block;height:100%;background:var(--ok)}
+.dayhead{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin:18px 0 10px;flex-wrap:wrap}
+.dayhead h2{margin:0;font-size:22px}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chipC);color:var(--ink);margin-left:6px;vertical-align:middle;font-weight:500}
+.chip.A{background:var(--chipA)}.chip.B{background:var(--chipB)}
+.sub{color:var(--mute);font-size:13px}
+section.block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+section.block>h3{margin:0 0 8px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.check{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.check:first-of-type{border-top:0}
+.check label{flex:1;display:flex;gap:10px;align-items:center;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:var(--ok);flex:none}
+.check.done label span{color:var(--mute);text-decoration:line-through}
+.vid{flex:none;display:inline-flex;align-items:center;gap:4px;font-size:12.5px;text-decoration:none;color:var(--accent);border:1px solid var(--accent);border-radius:999px;padding:3px 10px;white-space:nowrap}
+.vid:hover{background:var(--accent);color:var(--accent-ink)}
+.ex{border-top:1px solid var(--line);padding:14px 0 6px}
+.ex:first-of-type{border-top:0;padding-top:4px}
+.ex-h{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.ex-h h4{margin:0;font-size:16px}
+.meta{font-size:12.5px;color:var(--mute);margin-top:2px}
+.meta .last{color:var(--ink);font-weight:600}
+.cue{font-size:12.5px;color:var(--mute);background:var(--soft);border-radius:8px;padding:6px 9px;margin:8px 0}
+.cue.warn{color:var(--ink)}
+.sets{display:grid;gap:6px;margin-top:6px}
+.set{display:grid;grid-template-columns:44px 1fr 1fr 40px;gap:6px;align-items:center}
+.set.nw{grid-template-columns:44px 1fr 40px}
+.set .n{font-size:12px;color:var(--mute)}
+.field{position:relative}
+.field input{width:100%;height:38px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;font-size:16px;padding:0 34px 0 10px}
+.field input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.field em{position:absolute;right:9px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--mute);pointer-events:none}
+.tick{height:38px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--mute);font-size:18px;cursor:pointer}
+.tick.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.set.doneRow .field input{background:var(--ok-soft)}
+.micro{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dots{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--bg);cursor:pointer;color:var(--mute);font-size:12px}
+.dot.on{background:var(--ok);border-color:var(--ok);color:#fff}
+textarea{width:100%;min-height:70px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font:inherit;padding:8px 10px;resize:vertical}
+.rest{text-align:center;padding:40px 10px;color:var(--mute)}
+.rest b{display:block;font-size:40px;margin-bottom:6px}
+details{margin:20px 0}
+summary{cursor:pointer;color:var(--mute);font-size:13px}
+.settings{display:grid;gap:10px;margin-top:10px}
+.settings .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;padding:8px 12px;font:inherit;font-size:13.5px;cursor:pointer}
+.btn.danger{color:#c0392b}
+input[type=date]{height:36px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;padding:0 8px}
+.timer{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:var(--ink);color:var(--bg);border-radius:14px;padding:10px 14px;display:none;align-items:center;gap:12px;box-shadow:0 6px 24px rgba(0,0,0,.2);z-index:10;width:calc(100% - 32px);max-width:420px}
+.timer.show{display:flex}
+.timer .t{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;min-width:62px}
+.timer .lbl{flex:1;font-size:13px;opacity:.8}
+.timer button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:8px;padding:5px 9px;font:inherit;font-size:12.5px;cursor:pointer}
+.timer.end{background:var(--ok);color:#fff}
+.foot{font-size:12px;color:var(--mute);margin:10px 0 30px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="top">
+      <h1>居家重訓紀錄</h1>
+      <div class="weeknav">
+        <button id="prev" aria-label="上一週">‹</button>
+        <div class="wk" id="wk"></div>
+        <button id="next" aria-label="下一週">›</button>
+      </div>
+    </div>
+    <div class="phase"><span id="phase"></span>　·　<span id="sync">載入中…</span></div>
+    <div class="tabs" id="tabs"></div>
+  </div>
+</header>
+
+<main class="wrap" id="main"></main>
+
+<div class="wrap">
+  <details>
+    <summary>設定與備份</summary>
+    <div class="settings">
+      <div class="row"><span>第 1 週的週一：</span><input type="date" id="startDate"></div>
+      <div class="row">
+        <button class="btn" id="exp">匯出備份（JSON）</button>
+        <button class="btn" id="impBtn">匯入備份</button>
+        <input type="file" id="imp" accept="application/json" hidden>
+        <button class="btn danger" id="clear">清除全部紀錄</button>
+      </div>
+      <div class="sub" id="msg" role="status"></div>
+      <div class="sub">登入 claude.ai 開啟時，紀錄會存到雲端，只有你看得到，換手機也能接著記。直接打開 HTML 檔案時，紀錄只存在那台裝置的瀏覽器。</div>
+    </div>
+  </details>
+  <p class="foot">「▶ 示範」會在 YouTube 開啟該動作的教學影片搜尋結果，挑一支講解清楚的跟著做即可。</p>
+</div>
+
+<div class="timer" id="timer">
+  <div class="t" id="tt">1:30</div>
+  <div class="lbl" id="tl">組間休息</div>
+  <button id="tAdd">+30 秒</button>
+  <button id="tClose">關閉</button>
+</div>
+
+<script>
+// ---------- 動作資料 ----------
+const yt = q => 'https://www.youtube.com/results?search_query=' + encodeURIComponent(q);
+
+const EX = {
+  goblet:{name:'高腳杯深蹲',equip:'1 支啞鈴',sets:3,reps:'10',unit:'次',start:'8–12kg',w:'kg',main:true,
+    q:'高腳杯深蹲 goblet squat 教學',cue:'啞鈴貼胸、手肘往下夾在膝蓋內側；蹲到大腿約與地面平行，膝蓋跟腳尖同方向。'},
+  floorpress:{name:'地板臥推',equip:'2 支啞鈴',sets:3,reps:'10',unit:'次',start:'每支 8–10kg',w:'kg',main:true,
+    q:'啞鈴地板臥推 dumbbell floor press 教學',cue:'手肘碰到地板就推回去，不要彈地。手肘與身體約 45 度。',warn:true},
+  row:{name:'單臂啞鈴划船（手扶椅子）',equip:'1 支啞鈴',sets:3,reps:'10',unit:'次',side:true,start:'8–10kg',w:'kg',main:true,
+    q:'單臂啞鈴划船 one arm dumbbell row 教學',cue:'背打平，把啞鈴往髖部方向拉，不是往肩膀拉；頂點停一下。'},
+  ohp:{name:'站姿啞鈴肩推',equip:'2 支啞鈴',sets:2,reps:'10',unit:'次',start:'每支 5–6kg',w:'kg',
+    q:'站姿啞鈴肩推 standing dumbbell shoulder press 教學',cue:'收緊腹部和臀部，不要後仰借力。'},
+  facepull:{name:'彈力帶臉拉（門扣掛高）',equip:'35 磅彈力帶',sets:3,reps:'12',unit:'次',w:'磅',band:true,
+    q:'彈力帶臉拉 resistance band face pull 教學',cue:'往眼睛高度拉，手肘抬高、往外打開，肩胛往後夾。'},
+  plank:{name:'棒式',equip:'徒手',sets:3,reps:'30',unit:'秒',
+    q:'棒式 plank 正確姿勢 教學',cue:'頭到腳跟一直線，臀部不要塌或翹太高。'},
+  rdl:{name:'啞鈴羅馬尼亞硬舉',equip:'2 支啞鈴',sets:3,reps:'10',unit:'次',start:'每支 8–10kg',w:'kg',main:true,
+    q:'啞鈴羅馬尼亞硬舉 dumbbell romanian deadlift 教學',cue:'啞鈴貼著大腿往下滑，屁股往後推，下背不能拱；感覺大腿後側拉長就回來。',warn:true},
+  split:{name:'啞鈴分腿蹲',equip:'2 支啞鈴',sets:3,reps:'8',unit:'次',side:true,start:'每支 4–6kg',w:'kg',
+    q:'啞鈴分腿蹲 dumbbell split squat 教學',cue:'前後腳距離拉開，身體垂直往下，後膝接近地面。'},
+  pulldown:{name:'彈力帶下拉（門扣掛高、跪姿）',equip:'35 磅彈力帶',sets:3,reps:'12',unit:'次',w:'磅',band:true,
+    q:'彈力帶 跪姿 滑輪下拉 resistance band lat pulldown kneeling',cue:'手肘往下往後拉到身體兩側，胸口挺起，不要聳肩。'},
+  inclinepu:{name:'上斜伏地挺身（手扶桌緣或沙發）',equip:'徒手',sets:3,reps:'10',unit:'次',
+    q:'上斜伏地挺身 incline push up 教學',cue:'身體一直線，胸口靠近桌緣再推起。太輕鬆就換低一點的支撐。'},
+  bandrow:{name:'彈力帶坐姿划船（繞腳底）',equip:'35 磅彈力帶',sets:3,reps:'12',unit:'次',w:'磅',band:true,
+    q:'彈力帶坐姿划船 seated resistance band row 教學',cue:'坐直，把手拉到肚臍旁，肩胛往後夾。'},
+  farmer:{name:'農夫走路',equip:'2 支啞鈴',sets:3,reps:'30',unit:'公尺',start:'每支 12–15kg',w:'kg',
+    q:'農夫走路 farmer walk 教學',cue:'站高、肩膀往下沉，小步穩穩走。'},
+  sideplank:{name:'側棒式',equip:'徒手',sets:2,reps:'20',unit:'秒',side:true,
+    q:'側棒式 side plank 教學',cue:'手肘在肩膀正下方，髖部抬起成一直線。'}
+};
+
+const WORKOUT = {
+  A:{title:'重訓 A：深蹲、推、拉',list:['goblet','floorpress','row','ohp','facepull','plank']},
+  B:{title:'重訓 B：髖部、單腿、拉',list:['rdl','split','pulldown','inclinepu','bandrow','farmer','sideplank']}
+};
+
+const C = (id,text,q) => ({id,text,q});
+const WARMUP = [
+  C('w1','快走或原地踏步 3 分鐘','原地踏步 熱身'),
+  C('w2','靠牆天使 10 下','靠牆天使 wall angel 教學'),
+  C('w3','彈力帶水平拉開 15 下（雙手抓寬一點）','彈力帶 水平拉開 band pull apart 教學'),
+  C('w4','徒手深蹲 10 下','徒手深蹲 bodyweight squat 教學'),
+  C('w5','徒手臀橋 10 下','臀橋 glute bridge 教學')
+];
+const DAYS = [
+  {key:'mon',type:'train'},
+  {key:'tue',type:'other',title:'有氧 40 分鐘＋體態矯正',time:'8:00–9:00',items:[
+    C('t1','快走或騎車 40 分鐘',null),
+    C('t2','單腳站 每邊 30 秒 × 3 組','單腳站 平衡訓練'),
+    C('t3','走直線（腳跟接腳尖）20 步 × 3 組','腳跟接腳尖 走直線 tandem walk 平衡'),
+    C('t4','彈力帶臉拉 2 × 15','彈力帶臉拉 resistance band face pull 教學'),
+    C('t5','靠牆天使 10 下','靠牆天使 wall angel 教學')]},
+  {key:'wed',type:'train'},
+  {key:'thu',type:'other',title:'散步 30 分鐘＋體態矯正',time:'16:00–16:45',items:[
+    C('h1','散步 30 分鐘',null),
+    C('h2','靠牆天使 10 下','靠牆天使 wall angel 教學'),
+    C('h3','門框開胸伸展 每邊 30 秒','門框 胸肌伸展 doorway pec stretch'),
+    C('h4','收下巴 10 下','收下巴運動 chin tuck 圓肩烏龜頸')]},
+  {key:'fri',type:'train'},
+  {key:'sat',type:'other',title:'戶外有氧 60 分鐘',time:'8:00–9:00',items:[
+    C('s1','爬山、騎車或長距離快走 60 分鐘',null)]},
+  {key:'sun',type:'rest'}
+];
+const MICRO_Q = '椅背 胸椎伸展 辦公室 伸展';
+const DAYNAME = ['一','二','三','四','五','六','日'];
+
+function workoutFor(week, i){
+  const odd = week % 2 === 1;
+  if (i===0 || i===4) return odd ? 'A' : 'B';
+  if (i===2) return odd ? 'B' : 'A';
+  return null;
+}
+function target(ex, week){
+  if (week >= 5 && ex.main) return {sets:4, reps:'5–6'};
+  return {sets:ex.sets, reps:ex.reps};
+}
+
+// ---------- 狀態 ----------
+const KEY = 'home-gym-log-v1';
+const pad = n => String(n).padStart(2,'0');
+const iso = d => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+function mondayOf(d){const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()-((x.getDay()+6)%7));return x}
+function parseISO(s){const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)}
+
+let S = null;
+try { S = JSON.parse(localStorage.getItem(KEY)); } catch(e) {}
+if (!S || !S.start) S = {start: iso(mondayOf(new Date())), log:{}};
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e) {} }
+
+// ---------- 雲端同步（claude.ai 私人資料夾；開本機檔案時只存在瀏覽器） ----------
+let col = null, downloads = null;
+const timers = {}, writing = {}, dirty = {};
+function setSync(t){ const el=document.getElementById('sync'); if(el) el.textContent=t; }
+function docData(key){
+  if (key==='settings') return {start:S.start};
+  const [w,i] = key.slice(2).split('-');
+  return {entry: JSON.stringify(S.log[w+'-'+i] || {})};
+}
+async function flush(key){
+  if (!col) return;
+  if (writing[key]){ dirty[key]=true; return; }
+  writing[key]=true; setSync('同步中…');
+  try{
+    if (key.startsWith('d-') && !S.log[key.slice(2)]) await col.doc(key).delete();
+    else await col.doc(key).set(docData(key));
+    setSync('已同步到雲端');
+  }catch(e){ setSync('同步失敗，資料暫存在這台裝置'); }
+  writing[key]=false;
+  if (dirty[key]){ dirty[key]=false; flush(key); }
+}
+function sync(key, wait){
+  save(); if (!col) return;
+  clearTimeout(timers[key]); timers[key]=setTimeout(()=>flush(key), wait ?? 700);
+}
+const syncDay = (w,i) => sync('d-'+w+'-'+i);
+async function initCloud(){
+  if (!window.claude || !window.claude.use) { setSync('紀錄存在這台裝置'); return; }
+  const [db, user, dl] = await Promise.all([claude.use('db'), claude.use('user'), claude.use('downloads')]);
+  downloads = dl;
+  const uid = user ? await user.id() : null;
+  if (!db || !uid) { setSync('紀錄存在這台裝置'); return; }
+  col = db.collection('data/users/' + uid);
+  try{
+    const snap = await col.get();
+    if (snap.empty){
+      // 第一次：把這台裝置原有的紀錄搬上去
+      await col.doc('settings').set(docData('settings'));
+      for (const k of Object.keys(S.log)) await col.doc('d-'+k).set(docData('d-'+k));
+    } else {
+      const log = {}; let start = S.start;
+      snap.docs.forEach(d=>{
+        const v = d.data();
+        if (d.id==='settings' && v.start) start = v.start;
+        else if (d.id.startsWith('d-')) { try{ log[d.id.slice(2)] = JSON.parse(v.entry); }catch(e){} }
+      });
+      S = {start, log}; save();
+      ({week:curWeek, day:curDay} = todayPos()); render();
+    }
+    setSync('已同步到雲端');
+  }catch(e){ col=null; setSync('無法連線雲端，紀錄存在這台裝置'); }
+}
+
+function todayPos(){
+  const t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.floor((t - parseISO(S.start)) / 86400000);
+  return {week: Math.max(1, Math.floor(diff/7)+1), day: diff < 0 ? 0 : diff % 7};
+}
+let {week:curWeek, day:curDay} = todayPos();
+
+function entry(w,i,create){
+  const k = w+'-'+i;
+  if (!S.log[k] && create) S.log[k] = {sets:{}, chk:{}, micro:0, note:''};
+  return S.log[k];
+}
+function dateOf(w,i){const d=parseISO(S.start);d.setDate(d.getDate()+(w-1)*7+i);return d}
+
+function lastWeight(exId, w, i){
+  const now = w*7+i; let best=null, bestOrd=-1;
+  for (const k in S.log){
+    const [kw,ki] = k.split('-').map(Number); const ord = kw*7+ki;
+    if (ord >= now || ord <= bestOrd) continue;
+    const sets = (S.log[k].sets||{})[exId]; if (!sets) continue;
+    const ws = sets.map(s=>parseFloat(s.w)).filter(n=>!isNaN(n));
+    if (ws.length){best=Math.max(...ws);bestOrd=ord}
+  }
+  return best;
+}
+
+function progress(w,i){
+  const d = DAYS[i], e = entry(w,i,false) || {sets:{},chk:{}};
+  let total=0, done=0;
+  if (d.type==='train'){
+    const wk = WORKOUT[workoutFor(w,i)];
+    WARMUP.forEach(c=>{total++; if(e.chk[c.id]) done++});
+    wk.list.forEach(id=>{
+      const n = target(EX[id],w).sets; total+=n;
+      const s = e.sets[id]||[]; for(let j=0;j<n;j++) if(s[j]&&s[j].d) done++;
+    });
+  } else if (d.type==='other'){
+    d.items.forEach(c=>{total++; if(e.chk[c.id]) done++});
+  } else return null;
+  return total ? done/total : 0;
+}
+
+// ---------- 畫面 ----------
+const esc = s => String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const vid = q => q ? `<a class="vid" href="${yt(q)}" target="_blank" rel="noopener">▶ 示範</a>` : '';
+
+function renderHeader(){
+  document.getElementById('wk').textContent = `第 ${curWeek} 週`;
+  const odd = curWeek%2===1;
+  document.getElementById('phase').textContent =
+    (curWeek>=5 ? '第 5 週起：主項 4 × 5–6，加重量' : '第 1–4 週：3 × 10，先把動作學好') +
+    `　·　本週 一/五 做 ${odd?'A':'B'}、三 做 ${odd?'B':'A'}`;
+  const t = todayPos();
+  document.getElementById('tabs').innerHTML = DAYS.map((d,i)=>{
+    const wo = workoutFor(curWeek,i);
+    const label = wo ? '重訓'+wo : d.type==='rest' ? '休息' : i===5 ? '戶外' : i===1 ? '有氧' : '散步';
+    const p = progress(curWeek,i);
+    const isToday = t.week===curWeek && t.day===i;
+    return `<button class="tab${i===curDay?' on':''}${isToday?' today':''}" data-day="${i}">
+      <b>${DAYNAME[i]}</b><small>${label}</small>
+      <div class="bar">${p!==null?`<i style="width:${Math.round(p*100)}%"></i>`:''}</div></button>`;
+  }).join('');
+}
+
+function checklist(items, e){
+  return items.map(c=>`<div class="check${e.chk[c.id]?' done':''}">
+    <label><input type="checkbox" data-chk="${c.id}"${e.chk[c.id]?' checked':''}><span>${esc(c.text)}</span></label>${vid(c.q)}</div>`).join('');
+}
+
+function exCard(id, e){
+  const ex = EX[id], tg = target(ex,curWeek);
+  const sets = e.sets[id] || [];
+  const last = ex.w==='kg' ? lastWeight(id,curWeek,curDay) : null;
+  const meta = [ex.equip, `${tg.sets} × ${tg.reps}${ex.unit==='次'?'':' '+ex.unit}${ex.side?'（每邊）':''}`];
+  if (ex.start) meta.push('起始 '+ex.start);
+  let rows='';
+  for (let j=0;j<tg.sets;j++){
+    const s = sets[j]||{};
+    const wField = ex.w ? `<div class="field"><input inputmode="decimal" data-ex="${id}" data-s="${j}" data-f="w" value="${esc(s.w||'')}" placeholder="${ex.band?'35':(last??'')}"><em>${ex.w}</em></div>` : '';
+    rows += `<div class="set${ex.w?'':' nw'}${s.d?' doneRow':''}"><span class="n">第 ${j+1} 組</span>${wField}
+      <div class="field"><input inputmode="numeric" data-ex="${id}" data-s="${j}" data-f="r" value="${esc(s.r||'')}" placeholder="${tg.reps}"><em>${ex.unit}</em></div>
+      <button class="tick${s.d?' on':''}" data-tick="${id}" data-s="${j}" aria-label="完成第 ${j+1} 組">✓</button></div>`;
+  }
+  return `<div class="ex">
+    <div class="ex-h"><div><h4>${ex.name}${ex.main?'<span class="chip">主項</span>':''}</h4>
+      <div class="meta">${meta.join(' · ')}${last!==null?` · <span class="last">上次 ${last}kg</span>`:''}</div></div>${vid(ex.q)}</div>
+    <div class="cue${ex.warn?' warn':''}">${ex.warn?'⚠️ ':''}${ex.cue}</div>
+    <div class="sets">${rows}</div></div>`;
+}
+
+function render(){
+  renderHeader();
+  const d = DAYS[curDay], e = entry(curWeek,curDay,false) || {sets:{},chk:{},micro:0,note:''};
+  const date = dateOf(curWeek,curDay);
+  const dateStr = `${date.getMonth()+1}/${date.getDate()}（週${DAYNAME[curDay]}）`;
+  let html = '';
+  if (d.type==='train'){
+    const k = workoutFor(curWeek,curDay), wk = WORKOUT[k];
+    html += `<div class="dayhead"><h2>${wk.title.split('：')[0]}<span class="chip ${k}">${wk.title.split('：')[1]}</span></h2><span class="sub">${dateStr}　8:00–9:00</span></div>`;
+    html += `<section class="block"><h3>熱身 8 分鐘</h3>${checklist(WARMUP,e)}</section>`;
+    html += `<section class="block"><h3>訓練</h3>${wk.list.map(id=>exCard(id,e)).join('')}</section>`;
+    html += `<section class="block"><div class="cue" style="margin:0">做完最後 2 下還能再做 2 下，就是對的重量。槓片每支每次加一片 1.25kg（兩邊共 2.5kg）。彈力帶使用前先檢查有沒有裂痕，門扣卡在門的鉸鏈那一側並關好門。</div></section>`;
+  } else if (d.type==='other'){
+    html += `<div class="dayhead"><h2>${d.title}</h2><span class="sub">${dateStr}　${d.time}</span></div>`;
+    html += `<section class="block">${checklist(d.items,e)}</section>`;
+  } else {
+    html += `<div class="dayhead"><h2>休息日</h2><span class="sub">${dateStr}</span></div>`;
+    html += `<section class="block rest"><b>😴</b>好好睡、多喝水、吃夠蛋白質。</section>`;
+  }
+  if (d.type!=='rest'){
+    const m = e.micro||0;
+    html += `<section class="block"><h3>工作中微休息 <span>${vid(MICRO_Q)}</span></h3>
+      <div class="sub" style="margin-bottom:8px">每 45–60 分鐘一次：收下巴 10 下、椅背胸椎伸展 10 下、起身走動 1 分鐘。做完一次點一格。</div>
+      <div class="dots">${Array.from({length:8},(_,j)=>`<button class="dot${j<m?' on':''}" data-micro="${j+1}">${j+1}</button>`).join('')}</div></section>`;
+  }
+  html += `<section class="block"><h3>備註</h3><textarea id="note" placeholder="體重、睡眠、哪裡痠痛、哪個動作要加重…">${esc(e.note||'')}</textarea></section>`;
+  document.getElementById('main').innerHTML = html;
+  document.getElementById('startDate').value = S.start;
+}
+
+// ---------- 組間計時 ----------
+let tLeft=0, tInt=null;
+const timerEl = document.getElementById('timer');
+function fmt(s){return Math.floor(s/60)+':'+pad(s%60)}
+function startTimer(sec,label){
+  tLeft = sec; timerEl.classList.add('show'); timerEl.classList.remove('end');
+  document.getElementById('tl').textContent = label;
+  document.getElementById('tt').textContent = fmt(tLeft);
+  clearInterval(tInt);
+  tInt = setInterval(()=>{
+    tLeft--; document.getElementById('tt').textContent = fmt(Math.max(0,tLeft));
+    if (tLeft<=0){clearInterval(tInt);timerEl.classList.add('end');document.getElementById('tl').textContent='休息結束，下一組！';try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
+  },1000);
+}
+document.getElementById('tAdd').onclick=()=>{if(tLeft<=0){startTimer(30,'組間休息')}else{tLeft+=30;document.getElementById('tt').textContent=fmt(tLeft)}};
+document.getElementById('tClose').onclick=()=>{clearInterval(tInt);timerEl.classList.remove('show')};
+
+// ---------- 事件 ----------
+document.getElementById('tabs').addEventListener('click',ev=>{
+  const b = ev.target.closest('[data-day]'); if(!b) return;
+  curDay = +b.dataset.day; render(); window.scrollTo(0,0);
+});
+document.getElementById('prev').onclick=()=>{if(curWeek>1){curWeek--;render()}};
+document.getElementById('next').onclick=()=>{curWeek++;render()};
+
+const main = document.getElementById('main');
+main.addEventListener('input',ev=>{
+  const t = ev.target;
+  if (t.dataset.f){
+    const e = entry(curWeek,curDay,true);
+    const arr = e.sets[t.dataset.ex] = e.sets[t.dataset.ex] || [];
+    const j = +t.dataset.s; arr[j] = arr[j] || {};
+    arr[j][t.dataset.f] = t.value.trim(); syncDay(curWeek,curDay);
+  } else if (t.id==='note'){
+    entry(curWeek,curDay,true).note = t.value; syncDay(curWeek,curDay);
+  }
+});
+main.addEventListener('change',ev=>{
+  const t = ev.target; if(!t.dataset.chk) return;
+  const e = entry(curWeek,curDay,true);
+  e.chk[t.dataset.chk] = t.checked; syncDay(curWeek,curDay); render();
+});
+main.addEventListener('click',ev=>{
+  const tick = ev.target.closest('[data-tick]');
+  if (tick){
+    const id = tick.dataset.tick, j = +tick.dataset.s, ex = EX[id];
+    const e = entry(curWeek,curDay,true);
+    const arr = e.sets[id] = e.sets[id] || [];
+    const s = arr[j] = arr[j] || {};
+    s.d = !s.d;
+    if (s.d){
+      // 沒填就帶入預設：重量用上一組或上次紀錄，次數用目標下限
+      if (ex.w && !s.w){
+        const prev = arr.slice(0,j).reverse().find(x=>x&&x.w);
+        const last = ex.band ? '35' : (prev ? prev.w : lastWeight(id,curWeek,curDay));
+        if (last!=null) s.w = String(last);
+      }
+      if (!s.r) s.r = target(ex,curWeek).reps.split('–')[0];
+      startTimer(ex.main ? 120 : 75, ex.main ? '主項休息 2 分鐘' : '組間休息');
+    }
+    syncDay(curWeek,curDay); render(); return;
+  }
+  const md = ev.target.closest('[data-micro]');
+  if (md){
+    const e = entry(curWeek,curDay,true), n = +md.dataset.micro;
+    e.micro = e.micro===n ? n-1 : n; syncDay(curWeek,curDay); render();
+  }
+});
+
+document.getElementById('startDate').addEventListener('change',ev=>{
+  if(!ev.target.value) return;
+  S.start = iso(mondayOf(parseISO(ev.target.value))); sync('settings',0);
+  ({week:curWeek, day:curDay} = todayPos()); render();
+});
+const msg = t => { document.getElementById('msg').textContent = t; };
+document.getElementById('exp').onclick=async()=>{
+  const json = JSON.stringify(S,null,2), name = '重訓紀錄-'+iso(new Date())+'.json';
+  if (downloads){
+    try{ await downloads.save({filename:name, data:json}); msg('已匯出備份'); }
+    catch(e){ if(e && e.code!=='declined') msg('這裡無法匯出檔案'); }
+    return;
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  a.download = name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+};
+document.getElementById('impBtn').onclick=()=>document.getElementById('imp').click();
+document.getElementById('imp').onchange=ev=>{
+  const f = ev.target.files[0]; if(!f) return;
+  f.text().then(txt=>{
+    try{
+      const d=JSON.parse(txt); if(!d.start||!d.log) throw 0;
+      const old = Object.keys(S.log);
+      S=d; ({week:curWeek,day:curDay}=todayPos()); render();
+      sync('settings',0);
+      new Set([...old, ...Object.keys(S.log)]).forEach(k=>sync('d-'+k,0));
+      msg('匯入完成');
+    }catch(e){ msg('檔案格式不對，請選擇之前匯出的 JSON 備份'); }
+    ev.target.value='';
+  });
+};
+let clearArmed = null;
+document.getElementById('clear').onclick=ev=>{
+  const b = ev.currentTarget;
+  if (!clearArmed){
+    b.textContent='再按一次確認清除'; msg('清除後無法復原，建議先匯出備份。');
+    clearArmed = setTimeout(()=>{clearArmed=null; b.textContent='清除全部紀錄'; msg('');},4000);
+    return;
+  }
+  clearTimeout(clearArmed); clearArmed=null; b.textContent='清除全部紀錄';
+  const old = Object.keys(S.log);
+  S = {start:S.start, log:{}}; render();
+  old.forEach(k=>sync('d-'+k,0)); save(); msg('已清除全部紀錄');
+};
+
+render();
+initCloud();
+</script>
+</body>
+</html>
