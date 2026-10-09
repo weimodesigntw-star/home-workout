@@ -92,6 +92,16 @@ input[type=date]{height:36px;border:1px solid var(--line);border-radius:9px;back
 .timer .lbl{flex:1;font-size:13px;opacity:.8}
 .timer button{background:transparent;border:1px solid currentColor;color:inherit;border-radius:8px;padding:5px 9px;font:inherit;font-size:12.5px;cursor:pointer}
 .timer.end{background:var(--ok);color:#fff}
+.timer.prep{background:var(--accent);color:var(--accent-ink)}
+.check{flex-wrap:wrap}
+.tools{display:flex;gap:6px;flex-wrap:wrap;width:100%;padding-left:30px}
+.ex .tools{padding-left:0;margin:4px 0 8px}
+.tbtn{border:1px solid var(--line);background:var(--soft);color:var(--ink);border-radius:999px;padding:5px 12px;font:inherit;font-size:13px;cursor:pointer;white-space:nowrap}
+.tbtn.ios{background:var(--card)}
+.tbtn:active{transform:scale(.97)}
+.steps{margin:6px 0 0;padding-left:20px;font-size:13px;color:var(--mute)}
+.steps li{margin:3px 0}
+input.txt{height:36px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font:inherit;padding:0 10px;width:140px}
 .foot{font-size:12px;color:var(--mute);margin:10px 0 30px}
 </style>
 </head>
@@ -124,6 +134,15 @@ input[type=date]{height:36px;border:1px solid var(--line);border-radius:9px;back
         <input type="file" id="imp" accept="application/json" hidden>
         <button class="btn danger" id="clear">清除全部紀錄</button>
       </div>
+      <div class="row"><span>iPhone 捷徑名稱：</span><input class="txt" id="scName"><button class="btn" id="scTest">測試（10 秒）</button></div>
+      <div class="sub">按「⏰ iPhone」會執行這個捷徑，讓 iPhone 內建計時器開始倒數，鎖螢幕也會響。建立方式：</div>
+      <ol class="steps">
+        <li>打開「捷徑」App，點右上角「＋」，把捷徑命名為「重訓計時」。</li>
+        <li>加入動作「從輸入取得數字」，輸入選「捷徑輸入」。</li>
+        <li>加入動作「開始計時器」，時間點一下選變數「數字」，單位改成「秒」。</li>
+        <li>完成。回到這裡按「測試（10 秒）」，第一次會問是否允許執行捷徑，選「允許」。</li>
+        <li>計時開始後，點左上角的「◀ 返回」就能回到課表。</li>
+      </ol>
       <div class="sub" id="msg" role="status"></div>
       <div class="sub">登入 claude.ai 開啟時，紀錄會存到雲端，只有你看得到，換手機也能接著記。直接打開 HTML 檔案時，紀錄只存在那台裝置的瀏覽器。</div>
     </div>
@@ -135,6 +154,7 @@ input[type=date]{height:36px;border:1px solid var(--line);border-radius:9px;back
   <div class="t" id="tt">1:30</div>
   <div class="lbl" id="tl">組間休息</div>
   <button id="tAdd">+30 秒</button>
+  <button id="tIos" title="把剩下的時間交給 iPhone 計時器">⏰</button>
   <button id="tClose">關閉</button>
 </div>
 
@@ -176,9 +196,9 @@ const WORKOUT = {
   B:{title:'重訓 B：髖部、單腿、拉',list:['rdl','split','pulldown','inclinepu','bandrow','farmer','sideplank']}
 };
 
-const C = (id,text,q) => ({id,text,q});
+const C = (id,text,q,t) => ({id,text,q,...(t||{})});
 const WARMUP = [
-  C('w1','快走或原地踏步 3 分鐘','原地踏步 熱身'),
+  C('w1','快走或原地踏步 3 分鐘','原地踏步 熱身',{secs:180}),
   C('w2','靠牆天使 10 下','靠牆天使 wall angel 教學'),
   C('w3','彈力帶水平拉開 15 下（雙手抓寬一點）','彈力帶 水平拉開 band pull apart 教學'),
   C('w4','徒手深蹲 10 下','徒手深蹲 bodyweight squat 教學'),
@@ -187,20 +207,20 @@ const WARMUP = [
 const DAYS = [
   {key:'mon',type:'train'},
   {key:'tue',type:'other',title:'有氧 40 分鐘＋體態矯正',time:'8:00–9:00',items:[
-    C('t1','快走或騎車 40 分鐘',null),
-    C('t2','單腳站 每邊 30 秒 × 3 組','單腳站 平衡訓練'),
+    C('t1','快走或騎車 40 分鐘',null,{secs:2400}),
+    C('t2','單腳站 每邊 30 秒 × 3 組','單腳站 平衡訓練',{secs:30,sets:3,sides:true}),
     C('t3','走直線（腳跟接腳尖）20 步 × 3 組','腳跟接腳尖 走直線 tandem walk 平衡'),
     C('t4','彈力帶臉拉 2 × 15','彈力帶臉拉 resistance band face pull 教學'),
     C('t5','靠牆天使 10 下','靠牆天使 wall angel 教學')]},
   {key:'wed',type:'train'},
   {key:'thu',type:'other',title:'散步 30 分鐘＋體態矯正',time:'16:00–16:45',items:[
-    C('h1','散步 30 分鐘',null),
+    C('h1','散步 30 分鐘',null,{secs:1800}),
     C('h2','靠牆天使 10 下','靠牆天使 wall angel 教學'),
-    C('h3','門框開胸伸展 每邊 30 秒','門框 胸肌伸展 doorway pec stretch'),
+    C('h3','門框開胸伸展 每邊 30 秒','門框 胸肌伸展 doorway pec stretch',{secs:30,sides:true}),
     C('h4','收下巴 10 下','收下巴運動 chin tuck 圓肩烏龜頸')]},
   {key:'fri',type:'train'},
   {key:'sat',type:'other',title:'戶外有氧 60 分鐘',time:'8:00–9:00',items:[
-    C('s1','爬山、騎車或長距離快走 60 分鐘',null)]},
+    C('s1','爬山、騎車或長距離快走 60 分鐘',null,{secs:3600})]},
   {key:'sun',type:'rest'}
 ];
 const MICRO_Q = '椅背 胸椎伸展 辦公室 伸展';
@@ -346,9 +366,20 @@ function renderHeader(){
   }).join('');
 }
 
+const LONG = 600;
+function iosBtn(secs, text){ return `<button class="tbtn ios" data-ios="${secs}">⏰ iPhone${text?' '+text:''}</button>`; }
+function itemTools(c){
+  if (!c.secs) return '';
+  const simple = !c.sets && !c.sides;
+  const btns = [];
+  if (c.secs < LONG) btns.push(`<button class="tbtn" data-run="${c.id}">⏱ 開始計時</button>`);
+  if (simple) btns.push(iosBtn(c.secs, c.secs>=LONG ? fmtLong(c.secs)+'計時' : ''));
+  return `<div class="tools">${btns.join('')}</div>`;
+}
+function fmtLong(s){ return s>=3600 ? (s/3600)+' 小時' : Math.round(s/60)+' 分鐘'; }
 function checklist(items, e){
   return items.map(c=>`<div class="check${e.chk[c.id]?' done':''}">
-    <label><input type="checkbox" data-chk="${c.id}"${e.chk[c.id]?' checked':''}><span>${esc(c.text)}</span></label>${vid(c.q)}</div>`).join('');
+    <label><input type="checkbox" data-chk="${c.id}"${e.chk[c.id]?' checked':''}><span>${esc(c.text)}</span></label>${vid(c.q)}${itemTools(c)}</div>`).join('');
 }
 
 function exCard(id, e){
@@ -369,6 +400,7 @@ function exCard(id, e){
     <div class="ex-h"><div><h4>${ex.name}${ex.main?'<span class="chip">主項</span>':''}</h4>
       <div class="meta">${meta.join(' · ')}${last!==null?` · <span class="last">上次 ${last}kg</span>`:''}</div></div>${vid(ex.q)}</div>
     <div class="cue${ex.warn?' warn':''}">${ex.warn?'⚠️ ':''}${ex.cue}</div>
+    ${ex.unit==='秒' ? `<div class="tools"><button class="tbtn" data-runex="${id}">⏱ 開始下一組（${ex.side?'每邊 ':''}${parseInt(tg.reps)} 秒）</button>${ex.side?'':iosBtn(parseInt(tg.reps), parseInt(tg.reps)+' 秒')}</div>` : ''}
     <div class="sets">${rows}</div></div>`;
 }
 
@@ -394,7 +426,8 @@ function render(){
   if (d.type!=='rest'){
     const m = e.micro||0;
     html += `<section class="block"><h3>工作中微休息 <span>${vid(MICRO_Q)}</span></h3>
-      <div class="sub" style="margin-bottom:8px">每 45–60 分鐘一次：收下巴 10 下、椅背胸椎伸展 10 下、起身走動 1 分鐘。做完一次點一格。</div>
+      <div class="sub" style="margin-bottom:8px">每 45–60 分鐘一次：收下巴 10 下、椅背胸椎伸展 10 下、起身走動 1 分鐘。做完一次點一格，再按「⏰ 50 分鐘後提醒」設下一次。</div>
+      <div class="tools" style="padding-left:0;margin-bottom:10px"><button class="tbtn" data-walk>⏱ 走動 1 分鐘</button>${iosBtn(3000,'50 分鐘後提醒')}</div>
       <div class="dots">${Array.from({length:8},(_,j)=>`<button class="dot${j<m?' on':''}" data-micro="${j+1}">${j+1}</button>`).join('')}</div></section>`;
   }
   html += `<section class="block"><h3>備註</h3><textarea id="note" placeholder="體重、睡眠、哪裡痠痛、哪個動作要加重…">${esc(e.note||'')}</textarea></section>`;
@@ -402,22 +435,88 @@ function render(){
   document.getElementById('startDate').value = S.start;
 }
 
-// ---------- 組間計時 ----------
-let tLeft=0, tInt=null;
-const timerEl = document.getElementById('timer');
-function fmt(s){return Math.floor(s/60)+':'+pad(s%60)}
-function startTimer(sec,label){
-  tLeft = sec; timerEl.classList.add('show'); timerEl.classList.remove('end');
-  document.getElementById('tl').textContent = label;
-  document.getElementById('tt').textContent = fmt(tLeft);
-  clearInterval(tInt);
-  tInt = setInterval(()=>{
-    tLeft--; document.getElementById('tt').textContent = fmt(Math.max(0,tLeft));
-    if (tLeft<=0){clearInterval(tInt);timerEl.classList.add('end');document.getElementById('tl').textContent='休息結束，下一組！';try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}}
-  },1000);
+// ---------- 計時器 ----------
+const SC_KEY = 'home-gym-shortcut';
+let scName = '重訓計時';
+try { scName = localStorage.getItem(SC_KEY) || scName; } catch(e) {}
+function runShortcut(secs){
+  location.href = 'shortcuts://run-shortcut?name=' + encodeURIComponent(scName) + '&input=text&text=' + Math.round(secs);
 }
-document.getElementById('tAdd').onclick=()=>{if(tLeft<=0){startTimer(30,'組間休息')}else{tLeft+=30;document.getElementById('tt').textContent=fmt(tLeft)}};
-document.getElementById('tClose').onclick=()=>{clearInterval(tInt);timerEl.classList.remove('show')};
+
+const timerEl = document.getElementById('timer');
+const $tt = document.getElementById('tt'), $tl = document.getElementById('tl');
+let phases=[], pi=0, endAt=0, tInt=null, onDone=null, lastBeep=null, wake=null, actx=null;
+function fmt(s){return Math.floor(s/60)+':'+pad(s%60)}
+function beep(n, f){
+  try{
+    actx = actx || new (window.AudioContext||window.webkitAudioContext)();
+    if (actx.state==='suspended') actx.resume();
+    for (let k=0;k<(n||1);k++){
+      const o=actx.createOscillator(), g=actx.createGain(), t0=actx.currentTime+k*0.28;
+      o.frequency.value=f||880; o.connect(g); g.connect(actx.destination);
+      g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(0.5,t0+0.02); g.gain.exponentialRampToValueAtTime(0.0001,t0+0.2);
+      o.start(t0); o.stop(t0+0.22);
+    }
+  }catch(e){}
+}
+async function lockOn(){ try{ if(!wake && navigator.wakeLock) wake = await navigator.wakeLock.request('screen'); }catch(e){} }
+function lockOff(){ try{ wake && wake.release(); }catch(e){} wake=null; }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && tInt) { wake=null; lockOn(); } });
+
+function remaining(){ return Math.max(0, Math.ceil((endAt-Date.now())/1000)); }
+function runTimer(list, done, prep){
+  phases = prep===false ? list : [{label:'準備', secs:3, prep:true}, ...list];
+  pi=0; onDone=done||null;
+  beep(1,660); lockOn(); startPhase();
+}
+function startPhase(){
+  const p = phases[pi];
+  endAt = Date.now() + p.secs*1000; lastBeep = null;
+  timerEl.classList.add('show'); timerEl.classList.remove('end');
+  timerEl.classList.toggle('prep', !!p.prep);
+  $tl.textContent = p.label; $tt.textContent = fmt(p.secs);
+  clearInterval(tInt); tInt = setInterval(tick, 200);
+}
+function tick(){
+  const r = remaining(); $tt.textContent = fmt(r);
+  if (r>0 && r<=3 && r!==lastBeep){ lastBeep=r; beep(1,660); }
+  if (r>0) return;
+  pi++;
+  if (pi < phases.length){ beep(1,1040); startPhase(); return; }
+  clearInterval(tInt); tInt=null; lockOff(); beep(3,1040);
+  timerEl.classList.remove('prep'); timerEl.classList.add('end');
+  $tl.textContent = phases[phases.length-1].done || '時間到！';
+  const cb = onDone; onDone=null; cb && cb();
+}
+function startTimer(sec,label){ runTimer([{label, secs:sec, done:'休息結束，下一組！'}], null, false); }
+function stopTimer(){ clearInterval(tInt); tInt=null; lockOff(); timerEl.classList.remove('show','end','prep'); }
+document.getElementById('tAdd').onclick=()=>{
+  if (!tInt) startTimer(30,'組間休息'); else { endAt += 30000; $tt.textContent = fmt(remaining()); }
+};
+document.getElementById('tIos').onclick=()=>{
+  const r = tInt ? remaining() : 0; if (r<=0) return;
+  stopTimer(); runShortcut(r);
+};
+document.getElementById('tClose').onclick=stopTimer;
+
+// 依動作建立計時階段：分邊、分組自動接續
+function buildPhases(name, secs, sets, sides, restSecs){
+  const list=[]; sets = sets||1;
+  for (let k=1;k<=sets;k++){
+    const tag = sets>1 ? ` 第 ${k}/${sets} 組` : '';
+    if (sides){
+      list.push({label:`${name}${tag}・左邊`, secs});
+      list.push({label:'換邊', secs:5, prep:true});
+      list.push({label:`${name}${tag}・右邊`, secs});
+    } else list.push({label:name+tag, secs});
+    if (k<sets) list.push({label:'休息', secs:restSecs||15, prep:true});
+  }
+  return list;
+}
+function findItem(id){
+  for (const c of WARMUP) if (c.id===id) return c;
+  for (const d of DAYS) for (const c of (d.items||[])) if (c.id===id) return c;
+}
 
 // ---------- 事件 ----------
 document.getElementById('tabs').addEventListener('click',ev=>{
@@ -464,6 +563,34 @@ main.addEventListener('click',ev=>{
     }
     syncDay(curWeek,curDay); render(); return;
   }
+  const ios = ev.target.closest('[data-ios]');
+  if (ios){ runShortcut(+ios.dataset.ios); return; }
+  const run = ev.target.closest('[data-run]');
+  if (run){
+    const c = findItem(run.dataset.run), w=curWeek, i=curDay;
+    const name = c.text.split(/\s/)[0];
+    runTimer(buildPhases(name, c.secs, c.sets, c.sides), ()=>{
+      const e = entry(w,i,true); e.chk[c.id]=true; syncDay(w,i);
+      if (w===curWeek && i===curDay) render(); else renderHeader();
+    });
+    return;
+  }
+  const rx = ev.target.closest('[data-runex]');
+  if (rx){
+    const id = rx.dataset.runex, ex = EX[id], tg = target(ex,curWeek), secs = parseInt(tg.reps), w=curWeek, i=curDay;
+    const e0 = entry(w,i,false), done0 = ((e0&&e0.sets[id])||[]);
+    let j = 0; while (j<tg.sets && done0[j] && done0[j].d) j++;
+    if (j>=tg.sets) j = tg.sets-1;
+    runTimer(buildPhases(`${ex.name} 第 ${j+1} 組`, secs, 1, ex.side), ()=>{
+      const e = entry(w,i,true), arr = e.sets[id] = e.sets[id] || [];
+      arr[j] = Object.assign(arr[j]||{}, {d:true, r: arr[j]&&arr[j].r ? arr[j].r : String(secs)});
+      syncDay(w,i);
+      if (w===curWeek && i===curDay) render(); else renderHeader();
+      if (j < tg.sets-1) setTimeout(()=>startTimer(45,'組間休息'), 1500);
+    });
+    return;
+  }
+  if (ev.target.closest('[data-walk]')){ runTimer([{label:'起身走動', secs:60, done:'回座位，繼續工作！'}]); return; }
   const md = ev.target.closest('[data-micro]');
   if (md){
     const e = entry(curWeek,curDay,true), n = +md.dataset.micro;
@@ -476,6 +603,10 @@ document.getElementById('startDate').addEventListener('change',ev=>{
   S.start = iso(mondayOf(parseISO(ev.target.value))); sync('settings',0);
   ({week:curWeek, day:curDay} = todayPos()); render();
 });
+const scInput = document.getElementById('scName');
+scInput.value = scName;
+scInput.addEventListener('change',()=>{ scName = scInput.value.trim() || '重訓計時'; scInput.value = scName; try{ localStorage.setItem(SC_KEY, scName); }catch(e){} });
+document.getElementById('scTest').onclick=()=>runShortcut(10);
 const msg = t => { document.getElementById('msg').textContent = t; };
 document.getElementById('exp').onclick=async()=>{
   const json = JSON.stringify(S,null,2), name = '重訓紀錄-'+iso(new Date())+'.json';
